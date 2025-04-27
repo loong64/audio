@@ -114,7 +114,7 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: >
             yum install -y ccache
           CIBW_BEFORE_BUILD_LINUX: >
-            pip install torch wheel &&
+            pip install torch==${{ env.BUILD_VERSION }} wheel &&
             pip install https://github.com/loong64/auditwheel/releases/download/6.2.0/auditwheel-6.2.0-py3-none-any.whl
           CIBW_ENVIRONMENT_LINUX: >
             BUILD_VERSION=${{ env.BUILD_VERSION }}
