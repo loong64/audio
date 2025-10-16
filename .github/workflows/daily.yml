@@ -67,7 +67,7 @@ jobs:
       fail-fast: false
       matrix:
         package: ['audio']
-        platform: ['cp39-manylinux_loongarch64', 'cp310-manylinux_loongarch64', 'cp311-manylinux_loongarch64', 'cp312-manylinux_loongarch64', 'cp313-manylinux_loongarch64']
+        platform: ['cp310-manylinux_loongarch64', 'cp311-manylinux_loongarch64', 'cp312-manylinux_loongarch64', 'cp313-manylinux_loongarch64', 'cp314-manylinux_loongarch64']
     steps:
       - name: Get version
         run: |
@@ -84,8 +84,10 @@ jobs:
       - name: Patch source
         run: |
           mkdir -p packaging/wheel
-          wget -qO - https://github.com/loong64/audio/raw/refs/heads/main/ffmpeg_loong64.patch | patch -p1
           wget -q -O packaging/wheel/relocate.py https://github.com/loong64/audio/raw/refs/heads/main/relocate.py
+
+          echo -e '\n[build-system]' >> pyproject.toml
+          echo -e '\nrequires = ["setuptools", "torch", "wheel"]' >> pyproject.toml
 
       - name: Cache
         uses: actions/cache@v4
@@ -104,18 +106,18 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - name: Build wheels
-        uses: loong64/cibuildwheel@v3.1.4
+        uses: loong64/cibuildwheel@v3.2.1
         env:
           CIBW_MANYLINUX_LOONGARCH64_IMAGE: "ghcr.io/loong64/manylinuxloongarch64-builder:cpu-loongarch64"
           CIBW_ARCHS: loongarch64
           CIBW_BUILD: ${{ matrix.platform }}
-          CIBW_BUILD_FRONTEND: "pip; args: --no-use-pep517"
+          CIBW_BUILD_FRONTEND: "pip"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_BEFORE_ALL_LINUX: >
             yum install -y ccache
           CIBW_BEFORE_BUILD_LINUX: >
-            pip install torch==${{ env.BUILD_VERSION }} wheel &&
             pip install https://github.com/loong64/auditwheel/releases/download/6.2.0/auditwheel-6.2.0-py3-none-any.whl
+          CIBW_ENABLE: cpython-freethreading
           CIBW_ENVIRONMENT_LINUX: >
             BUILD_VERSION=${{ env.BUILD_VERSION }}
             PIP_EXTRA_INDEX_URL="https://gitlab.com/api/v4/projects/65746188/packages/pypi/simple"
