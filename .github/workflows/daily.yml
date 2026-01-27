@@ -95,9 +95,6 @@ jobs:
 
       - name: Patch source
         run: |
-          mkdir -p packaging/wheel
-          wget -q -O packaging/wheel/relocate.py https://github.com/loong64/audio/raw/refs/heads/main/relocate.py
-
           echo -e '\n[build-system]' >> pyproject.toml
           echo -e '\nrequires = ["setuptools", "torch", "wheel"]' >> pyproject.toml
 
@@ -146,7 +143,6 @@ jobs:
               abs_pkg=$(realpath $pkg)
               repair_manylinux_2_38.sh $abs_pkg
             done &&
-            python packaging/wheel/relocate.py &&
             cp -f dist/*.whl {dest_dir}
           CIBW_TEST_SKIP: "*"
 
