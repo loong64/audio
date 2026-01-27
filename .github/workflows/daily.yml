@@ -95,9 +95,6 @@ jobs:
 
       - name: Patch source
         run: |
-          mkdir -p packaging/wheel
-          wget -q -O packaging/wheel/relocate.py https://github.com/loong64/audio/raw/refs/heads/main/relocate.py
-
           echo -e '\n[build-system]' >> pyproject.toml
           echo -e '\nrequires = ["setuptools", "torch", "wheel"]' >> pyproject.toml
 
@@ -108,11 +105,6 @@ jobs:
             /home/runner/data/cache
           key: ${{ matrix.package }}-${{ matrix.platform }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: ${{ matrix.package }}-${{ matrix.platform }}-
-
-      - name: Setup Cache
-        run: |
-          sudo mkdir -p /home/runner/data/cache/.cache
-          sudo chown -R root:docker /home/runner/data/cache
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
@@ -126,16 +118,13 @@ jobs:
           CIBW_BUILD_FRONTEND: "pip"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_BEFORE_ALL_LINUX: >
-            yum install -y ccache
+            yum install -y sox-devel
           CIBW_BEFORE_BUILD_LINUX: >
             pip install https://github.com/loong64/auditwheel/releases/download/6.2.0/auditwheel-6.2.0-py3-none-any.whl
           CIBW_ENABLE: cpython-freethreading
           CIBW_ENVIRONMENT_LINUX: >
             BUILD_VERSION=${{ env.BUILD_VERSION }}
             PIP_EXTRA_INDEX_URL="https://gitlab.com/api/v4/projects/65746188/packages/pypi/simple"
-            USE_CCACHE=1
-            PATH="/usr/lib64/ccache:$PATH"
-            CCACHE_DIR="/host/home/runner/data/cache/ccache"
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             mkdir -p dist {dest_dir} &&
             cp -f {wheel} dist &&
@@ -146,7 +135,6 @@ jobs:
               abs_pkg=$(realpath $pkg)
               repair_manylinux_2_38.sh $abs_pkg
             done &&
-            python packaging/wheel/relocate.py &&
             cp -f dist/*.whl {dest_dir}
           CIBW_TEST_SKIP: "*"
 
