@@ -7,7 +7,7 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       create: ${{ steps.check_release.outputs.create }}
       version: ${{ steps.get_version.outputs.version }}
@@ -51,7 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: env.create == '1'
 
       - name: Create tag
@@ -87,7 +87,7 @@ jobs:
           echo "BUILD_VERSION=${app_version/v/}" >> $GITHUB_ENV
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: pytorch/audio
           ref: ${{ needs.check.outputs.version }}
@@ -98,19 +98,11 @@ jobs:
           echo -e '\n[build-system]' >> pyproject.toml
           echo -e '\nrequires = ["setuptools", "torch", "wheel"]' >> pyproject.toml
 
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            /home/runner/data/cache
-          key: ${{ matrix.package }}-${{ matrix.platform }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: ${{ matrix.package }}-${{ matrix.platform }}-
-
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Build wheels
-        uses: loong64/cibuildwheel@v3.2.1
+        uses: loong64/cibuildwheel@v3.4.0
         env:
           CIBW_MANYLINUX_LOONGARCH64_IMAGE: "ghcr.io/loong64/manylinuxloongarch64-builder:cpu-loongarch64"
           CIBW_ARCHS: loongarch64
@@ -153,7 +145,3 @@ jobs:
           gh release upload ${{ needs.check.outputs.version }} -R ${{ github.repository }} wheelhouse/*.whl --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache permissions
-        run: |
-          sudo chown -R runner:docker /home/runner/data/cache
